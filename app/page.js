@@ -5,7 +5,6 @@ import { Download, TriangleAlert, Trash2 } from "lucide-react";
 
 import { AboutCard } from "@/components/profile/about-card";
 import { ConfirmDeleteDialog } from "@/components/profile/confirm-delete-dialog";
-import { DocumentsCard } from "@/components/profile/documents-card";
 import { EducationCard } from "@/components/profile/education-card";
 import { ExperienceCard } from "@/components/profile/experience-card";
 import { IntroCard } from "@/components/profile/intro-card";
@@ -82,10 +81,6 @@ export default function ProfilePage() {
             about={profile.about}
             onChange={(about) => updateActiveData((d) => ({ ...d, about }))}
           />
-          <DocumentsCard
-            documents={profile.documents ?? []}
-            onChange={(documents) => updateActiveData((d) => ({ ...d, documents }))}
-          />
           <ExperienceCard
             experience={profile.experience}
             onChange={(experience) => updateActiveData((d) => ({ ...d, experience }))}
@@ -116,7 +111,7 @@ export default function ProfilePage() {
         open={resetOpen}
         onOpenChange={setResetOpen}
         title="Delete all profile data?"
-        description="This clears every field in this profile — intro, about, documents, experience, education, and skills. This can't be undone."
+        description="This clears every field in this profile — intro, about, experience, education, and skills. This can't be undone."
         onConfirm={resetActiveData}
         confirmLabel="Delete all"
       />

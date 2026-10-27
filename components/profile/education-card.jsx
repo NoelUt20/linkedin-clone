@@ -18,6 +18,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { ConfirmDeleteDialog } from "@/components/profile/confirm-delete-dialog";
 import { LogoUpload } from "@/components/profile/logo-upload";
 import { AutocompleteInput } from "@/components/profile/autocomplete-input";
+import {
+  cleanDocument,
+  DocumentAttachment,
+  DocumentAttachmentField,
+} from "@/components/profile/document-attachment";
 import { schools } from "@/data/schools";
 import { generateMonogramDataUrl } from "@/lib/generate-monogram";
 
@@ -29,12 +34,14 @@ const emptyDraft = {
   endYear: "",
   description: "",
   logo: null,
+  document: null,
 };
 
 export function EducationCard({ education, onChange }) {
   const [editingId, setEditingId] = useState(null); // null closed, "new", or item id
   const [draft, setDraft] = useState(emptyDraft);
   const [deleteId, setDeleteId] = useState(null);
+  const missingDocumentName = draft.document !== null && !draft.document.title.trim();
 
   const openAdd = () => {
     setDraft(emptyDraft);
@@ -42,20 +49,21 @@ export function EducationCard({ education, onChange }) {
   };
 
   const openEdit = (item) => {
-    setDraft({ ...item });
+    setDraft({ document: null, ...item });
     setEditingId(item.id);
   };
 
   const close = () => setEditingId(null);
 
   const handleSave = () => {
-    if (!draft.school.trim()) return;
+    if (!draft.school.trim() || missingDocumentName) return;
+    const saved = { ...draft, document: cleanDocument(draft.document) };
     if (editingId === "new") {
-      onChange([...education, { ...draft, id: `edu-${Date.now()}` }]);
+      onChange([...education, { ...saved, id: `edu-${Date.now()}` }]);
     } else {
       onChange(
         education.map((item) =>
-          item.id === editingId ? { ...draft, id: editingId } : item
+          item.id === editingId ? { ...saved, id: editingId } : item
         )
       );
     }
@@ -117,6 +125,7 @@ export function EducationCard({ education, onChange }) {
                   {item.description}
                 </p>
               )}
+              {item.document && <DocumentAttachment document={item.document} />}
             </div>
             <div className="flex shrink-0 gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 print:hidden">
               <Button
@@ -235,12 +244,17 @@ export function EducationCard({ education, onChange }) {
                 onChange={(e) => setDraft({ ...draft, description: e.target.value })}
               />
             </div>
+            <DocumentAttachmentField
+              id="edu-document"
+              document={draft.document}
+              onChange={(document) => setDraft((d) => ({ ...d, document }))}
+            />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={close}>
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={!draft.school.trim()}>
+            <Button onClick={handleSave} disabled={!draft.school.trim() || missingDocumentName}>
               Save
             </Button>
           </DialogFooter>

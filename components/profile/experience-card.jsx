@@ -18,6 +18,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { ConfirmDeleteDialog } from "@/components/profile/confirm-delete-dialog";
 import { LogoUpload } from "@/components/profile/logo-upload";
 import { AutocompleteInput } from "@/components/profile/autocomplete-input";
+import {
+  cleanDocument,
+  DocumentAttachment,
+  DocumentAttachmentField,
+} from "@/components/profile/document-attachment";
 import { companies } from "@/data/companies";
 import { generateMonogramDataUrl } from "@/lib/generate-monogram";
 
@@ -31,6 +36,7 @@ const emptyDraft = {
   current: false,
   description: "",
   logo: null,
+  document: null,
 };
 
 // Adjacent positions at the same company are grouped under one logo and
@@ -56,6 +62,7 @@ export function ExperienceCard({ experience, onChange }) {
   const [deleteId, setDeleteId] = useState(null);
 
   const groups = useMemo(() => groupByCompany(experience), [experience]);
+  const missingDocumentName = draft.document !== null && !draft.document.title.trim();
 
   const openAdd = () => {
     setDraft(emptyDraft);
@@ -63,20 +70,21 @@ export function ExperienceCard({ experience, onChange }) {
   };
 
   const openEdit = (item) => {
-    setDraft({ ...item });
+    setDraft({ document: null, ...item });
     setEditingId(item.id);
   };
 
   const close = () => setEditingId(null);
 
   const handleSave = () => {
-    if (!draft.title.trim() || !draft.company.trim()) return;
+    if (!draft.title.trim() || !draft.company.trim() || missingDocumentName) return;
+    const saved = { ...draft, document: cleanDocument(draft.document) };
     if (editingId === "new") {
-      onChange([...experience, { ...draft, id: `exp-${Date.now()}` }]);
+      onChange([...experience, { ...saved, id: `exp-${Date.now()}` }]);
     } else {
       onChange(
         experience.map((item) =>
-          item.id === editingId ? { ...draft, id: editingId } : item
+          item.id === editingId ? { ...saved, id: editingId } : item
         )
       );
     }
@@ -183,6 +191,7 @@ export function ExperienceCard({ experience, onChange }) {
                       {item.description}
                     </p>
                   )}
+                  {item.document && <DocumentAttachment document={item.document} />}
                 </div>
                 {actions(item, index)}
               </div>
@@ -228,6 +237,7 @@ export function ExperienceCard({ experience, onChange }) {
                           {item.description}
                         </p>
                       )}
+                      {item.document && <DocumentAttachment document={item.document} />}
                     </div>
                   ))}
                 </div>
@@ -338,6 +348,11 @@ export function ExperienceCard({ experience, onChange }) {
                 onChange={(e) => setDraft({ ...draft, description: e.target.value })}
               />
             </div>
+            <DocumentAttachmentField
+              id="exp-document"
+              document={draft.document}
+              onChange={(document) => setDraft((d) => ({ ...d, document }))}
+            />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={close}>
@@ -345,7 +360,7 @@ export function ExperienceCard({ experience, onChange }) {
             </Button>
             <Button
               onClick={handleSave}
-              disabled={!draft.title.trim() || !draft.company.trim()}
+              disabled={!draft.title.trim() || !draft.company.trim() || missingDocumentName}
             >
               Save
             </Button>
