@@ -10,6 +10,7 @@ export const emptyProfile = {
     website: "",
   },
   about: "",
+  documents: [],
   experience: [],
   education: [],
   skills: [],
