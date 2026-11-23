@@ -14,16 +14,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { initials } from "@/lib/initials";
 import { resizeImageToDataUrl } from "@/lib/resize-image";
-
-function initials(name) {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("");
-}
 
 export function IntroCard({ profile, onChange }) {
   const [editOpen, setEditOpen] = useState(false);

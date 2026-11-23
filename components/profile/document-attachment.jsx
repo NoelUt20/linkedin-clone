@@ -72,7 +72,7 @@ export function DocumentAttachment({ document }) {
         className="mt-3 flex w-full items-center gap-3 rounded-lg text-left hover:opacity-90 sm:gap-4"
       >
         <DocumentThumbnail document={document} />
-        <span className="min-w-0 flex-1 font-semibold text-foreground">{document.title}</span>
+        <span className="min-w-0 flex-1 text-[0.875rem] font-semibold leading-snug text-foreground">{document.title}</span>
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>

@@ -69,7 +69,15 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-page pb-20 sm:pb-0">
-      <MobileTopBar onExport={() => window.print()} onDeleteAll={() => setResetOpen(true)} />
+      <MobileTopBar
+        profiles={profiles}
+        activeId={activeId}
+        onSwitch={setActiveId}
+        onAdd={addProfile}
+        onRemove={(id) => setCloseTabId(id)}
+        onExport={() => window.print()}
+        onDeleteAll={() => setResetOpen(true)}
+      />
       <header className="hidden border-b border-border bg-card sm:block print:hidden">
         <div className="mx-auto flex h-14 max-w-[1128px] items-center justify-between px-4">
           <span className="text-xl font-bold text-link">in</span>
@@ -77,7 +85,7 @@ export default function ProfilePage() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-[1128px] print:hidden">
+      <div className="mx-auto hidden max-w-[1128px] sm:block print:hidden">
         <ProfileTabBar
           profiles={profiles}
           activeId={activeId}
