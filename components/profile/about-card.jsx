@@ -1,10 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Pencil } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -13,10 +11,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { SectionCard } from "@/components/profile/section-card";
+import { cn } from "@/lib/utils";
 
 export function AboutCard({ about, onChange }) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(about);
+  const [expanded, setExpanded] = useState(false);
 
   const openEdit = () => {
     setDraft(about);
@@ -29,32 +30,36 @@ export function AboutCard({ about, onChange }) {
   };
 
   return (
-    <Card className="break-inside-avoid">
-      <CardHeader className="flex-row items-center justify-between">
-        <CardTitle className="text-xl">About</CardTitle>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={openEdit}
-          aria-label="Edit about"
-          className="print:hidden"
-        >
-          <Pencil className="size-4" />
-        </Button>
-      </CardHeader>
-      <CardContent>
-        {about ? (
-          <p className="whitespace-pre-line text-sm text-foreground/90">{about}</p>
-        ) : (
-          <button
-            type="button"
-            onClick={openEdit}
-            className="text-sm font-semibold text-[#0a66c2] hover:underline print:hidden"
+    <SectionCard title="About" onEdit={openEdit} editLabel="Edit about">
+      {about ? (
+        <div className="pt-2">
+          <p
+            className={cn(
+              "whitespace-pre-line text-base text-foreground",
+              !expanded && "line-clamp-4 print:line-clamp-none"
+            )}
           >
-            Add a summary about yourself
-          </button>
-        )}
-      </CardContent>
+            {about}
+          </p>
+          {!expanded && about.length > 150 && (
+            <button
+              type="button"
+              onClick={() => setExpanded(true)}
+              className="text-base text-muted-foreground hover:underline print:hidden"
+            >
+              …see more
+            </button>
+          )}
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={openEdit}
+          className="py-2 text-sm font-semibold text-link hover:underline print:hidden"
+        >
+          Add a summary about yourself
+        </button>
+      )}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-lg">
@@ -75,6 +80,6 @@ export function AboutCard({ about, onChange }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Card>
+    </SectionCard>
   );
 }

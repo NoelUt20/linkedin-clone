@@ -1,10 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowDown, ArrowUp, Briefcase, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Briefcase, Pencil, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -23,24 +22,37 @@ import {
   DocumentAttachment,
   DocumentAttachmentField,
 } from "@/components/profile/document-attachment";
+import {
+  EntryActions,
+  EntryLogo,
+  SectionCard,
+  ShowAllFooter,
+  SkillsField,
+  SkillsLine,
+} from "@/components/profile/section-card";
 import { companies } from "@/data/companies";
+import { formatSpan } from "@/lib/duration";
 import { generateMonogramDataUrl } from "@/lib/generate-monogram";
+
+const VISIBLE_GROUPS = 3;
 
 const emptyDraft = {
   title: "",
   company: "",
   employmentType: "",
   location: "",
+  locationType: "",
   startDate: "",
   endDate: "",
   current: false,
   description: "",
   logo: null,
+  skills: [],
   document: null,
 };
 
 // Adjacent positions at the same company are grouped under one logo and
-// connected by a line, matching LinkedIn's treatment of multiple roles
+// connected by a timeline, matching LinkedIn's treatment of multiple roles
 // held at a single employer.
 function groupByCompany(experience) {
   const groups = [];
@@ -56,12 +68,36 @@ function groupByCompany(experience) {
   return groups;
 }
 
+function dateRange(item) {
+  const end = item.current ? "Present" : item.endDate;
+  const range = [item.startDate, end].filter(Boolean).join("–");
+  const span = formatSpan([item]);
+  return [range, span].filter(Boolean).join(" · ");
+}
+
+const fallbackIcon = <Briefcase className="size-6 text-muted-foreground" />;
+
+function RoleDetails({ item }) {
+  return (
+    <>
+      {item.description && (
+        <p className="mt-2 whitespace-pre-line text-base text-foreground">{item.description}</p>
+      )}
+      <SkillsLine skills={item.skills} />
+      {item.document && <DocumentAttachment document={item.document} />}
+    </>
+  );
+}
+
 export function ExperienceCard({ experience, onChange }) {
   const [editingId, setEditingId] = useState(null); // null closed, "new", or item id
   const [draft, setDraft] = useState(emptyDraft);
   const [deleteId, setDeleteId] = useState(null);
+  const [editMode, setEditMode] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const groups = useMemo(() => groupByCompany(experience), [experience]);
+  const visibleGroups = expanded ? groups : groups.slice(0, VISIBLE_GROUPS);
   const missingDocumentName = draft.document !== null && !draft.document.title.trim();
 
   const openAdd = () => {
@@ -70,7 +106,7 @@ export function ExperienceCard({ experience, onChange }) {
   };
 
   const openEdit = (item) => {
-    setDraft({ document: null, ...item });
+    setDraft({ ...emptyDraft, ...item });
     setEditingId(item.id);
   };
 
@@ -103,149 +139,158 @@ export function ExperienceCard({ experience, onChange }) {
     onChange(next);
   };
 
-  return (
-    <Card>
-      <CardHeader className="flex-row items-center justify-between">
-        <CardTitle className="text-xl">Experience</CardTitle>
+  const actions = (item, index) =>
+    editMode && (
+      <EntryActions>
         <Button
           variant="ghost"
           size="icon"
-          onClick={openAdd}
-          aria-label="Add experience"
-          className="print:hidden"
+          onClick={() => moveItem(index, -1)}
+          disabled={index === 0}
+          aria-label="Move experience up"
         >
-          <Plus className="size-5" />
+          <ArrowUp className="size-4" />
         </Button>
-      </CardHeader>
-      <CardContent className="flex flex-col divide-y">
-        {experience.length === 0 && (
-          <p className="py-4 text-sm text-muted-foreground">No experience added yet.</p>
-        )}
-        {groups.map((group) => {
-          const isGrouped = group.entries.length > 1;
-          const groupLogo = group.entries.find(({ item }) => item.logo)?.item.logo ?? null;
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => moveItem(index, 1)}
+          disabled={index === experience.length - 1}
+          aria-label="Move experience down"
+        >
+          <ArrowDown className="size-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => openEdit(item)}
+          aria-label="Edit experience"
+        >
+          <Pencil className="size-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setDeleteId(item.id)}
+          aria-label="Delete experience"
+        >
+          <Trash2 className="size-4" />
+        </Button>
+      </EntryActions>
+    );
 
-          const actions = (item, index) => (
-            <div className="flex shrink-0 gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 print:hidden">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => moveItem(index, -1)}
-                disabled={index === 0}
-                aria-label="Move experience up"
-              >
-                <ArrowUp className="size-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => moveItem(index, 1)}
-                disabled={index === experience.length - 1}
-                aria-label="Move experience down"
-              >
-                <ArrowDown className="size-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => openEdit(item)}
-                aria-label="Edit experience"
-              >
-                <Pencil className="size-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setDeleteId(item.id)}
-                aria-label="Delete experience"
-              >
-                <Trash2 className="size-4" />
-              </Button>
-            </div>
-          );
-
-          if (!isGrouped) {
+  return (
+    <SectionCard
+      title="Experience"
+      onAdd={openAdd}
+      addLabel="Add experience"
+      onEdit={experience.length ? () => setEditMode((m) => !m) : undefined}
+      editLabel="Edit experience entries"
+      editing={editMode}
+      footer={
+        groups.length > VISIBLE_GROUPS && (
+          <ShowAllFooter
+            total={experience.length}
+            noun="experiences"
+            expanded={expanded}
+            onToggle={() => setExpanded((e) => !e)}
+          />
+        )
+      }
+    >
+      {experience.length === 0 && (
+        <p className="py-4 text-sm text-muted-foreground">No experience added yet.</p>
+      )}
+      <div className="flex flex-col divide-y divide-border">
+        {visibleGroups.map((group) => {
+          if (group.entries.length === 1) {
             const { item, index } = group.entries[0];
             return (
-              <div key={item.id} className="group flex break-inside-avoid gap-3 py-4 first:pt-0">
-                <div className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded bg-muted">
-                  {item.logo ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={item.logo} alt="" className="size-full object-cover" />
-                  ) : (
-                    <Briefcase className="size-6 text-muted-foreground" />
-                  )}
-                </div>
-                <div className="flex-1">
-                  <p className="font-semibold text-foreground">{item.title}</p>
-                  <p className="text-sm text-foreground/80">
-                    {item.company}
-                    {item.employmentType ? ` · ${item.employmentType}` : ""}
+              <div key={item.id} className="relative flex break-inside-avoid gap-3 py-4">
+                <EntryLogo logo={item.logo} fallback={fallbackIcon} />
+                <div className="min-w-0 flex-1">
+                  <p className="text-base font-semibold leading-snug text-foreground">
+                    {item.title}
                   </p>
-                  <p className="text-xs text-muted-foreground">
-                    {item.startDate || "—"} – {item.current ? "Present" : item.endDate || "—"}
-                    {item.location ? ` · ${item.location}` : ""}
+                  <p className="text-base leading-snug text-foreground">
+                    {[item.company, item.employmentType].filter(Boolean).join(" · ")}
                   </p>
-                  {item.description && (
-                    <p className="mt-2 whitespace-pre-line text-sm text-foreground/90">
-                      {item.description}
+                  <p className="text-base leading-snug text-muted-foreground">{dateRange(item)}</p>
+                  {(item.location || item.locationType) && (
+                    <p className="text-base leading-snug text-muted-foreground">
+                      {[item.location, item.locationType].filter(Boolean).join(" · ")}
                     </p>
                   )}
-                  {item.document && <DocumentAttachment document={item.document} />}
+                  <RoleDetails item={item} />
                 </div>
                 {actions(item, index)}
               </div>
             );
           }
 
+          const items = group.entries.map(({ item }) => item);
+          const first = items[0];
+          const groupLogo = items.find((item) => item.logo)?.logo ?? null;
+          const employmentType = items.find((item) => item.employmentType)?.employmentType;
+          const locationType = items.find((item) => item.locationType)?.locationType;
           return (
-            <div
-              key={group.key + group.entries[0].item.id}
-              className="flex break-inside-avoid gap-3 py-4 first:pt-0"
-            >
-              <div className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded bg-muted">
-                {groupLogo ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={groupLogo} alt="" className="size-full object-cover" />
-                ) : (
-                  <Briefcase className="size-6 text-muted-foreground" />
-                )}
-              </div>
-              <div className="flex-1">
-                <p className="font-semibold text-foreground">
-                  {group.entries[0].item.company}
-                </p>
-                <div className="mt-3 flex flex-col gap-4 border-l-2 border-border pl-4">
-                  {group.entries.map(({ item, index }) => (
-                    <div key={item.id} className="group">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <p className="font-semibold text-foreground">{item.title}</p>
-                          {item.employmentType && (
-                            <p className="text-sm text-foreground/80">{item.employmentType}</p>
-                          )}
-                          <p className="text-xs text-muted-foreground">
-                            {item.startDate || "—"} –{" "}
-                            {item.current ? "Present" : item.endDate || "—"}
-                            {item.location ? ` · ${item.location}` : ""}
-                          </p>
-                        </div>
-                        {actions(item, index)}
-                      </div>
-                      {item.description && (
-                        <p className="mt-2 whitespace-pre-line text-sm text-foreground/90">
-                          {item.description}
-                        </p>
-                      )}
-                      {item.document && <DocumentAttachment document={item.document} />}
-                    </div>
-                  ))}
+            <div key={group.key + first.id} className="break-inside-avoid py-4">
+              <div className="flex gap-3">
+                <EntryLogo logo={groupLogo} fallback={fallbackIcon} />
+                <div className="min-w-0 flex-1">
+                  <p className="text-base font-semibold leading-snug text-foreground">
+                    {first.company}
+                  </p>
+                  <p className="text-base leading-snug text-foreground">
+                    {[employmentType, formatSpan(items)].filter(Boolean).join(" · ")}
+                  </p>
+                  {locationType && (
+                    <p className="text-base leading-snug text-muted-foreground">{locationType}</p>
+                  )}
                 </div>
               </div>
+              <ol className="mt-3">
+                {group.entries.map(({ item, index }, i) => {
+                  const isLast = i === group.entries.length - 1;
+                  return (
+                    <li key={item.id} className="relative flex gap-3">
+                      {/* Timeline: a dot per role, joined by a line, centred under the logo. */}
+                      <div className="relative flex w-12 shrink-0 justify-center">
+                        <span className="mt-2 size-2 rounded-full bg-muted-foreground/70" />
+                        {!isLast && (
+                          <span className="absolute bottom-1 top-6 w-0.5 rounded bg-muted-foreground/40" />
+                        )}
+                      </div>
+                      <div className={`min-w-0 flex-1 ${isLast ? "" : "pb-6"}`}>
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-base font-semibold leading-snug text-foreground">
+                            {item.title}
+                          </p>
+                          {item.current && !editMode && (
+                            <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-sm font-semibold text-foreground/80">
+                              Now
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-base leading-snug text-muted-foreground">
+                          {dateRange(item)}
+                        </p>
+                        {item.location && (
+                          <p className="text-base leading-snug text-muted-foreground">
+                            {item.location}
+                          </p>
+                        )}
+                        <RoleDetails item={item} />
+                      </div>
+                      {actions(item, index)}
+                    </li>
+                  );
+                })}
+              </ol>
             </div>
           );
         })}
-      </CardContent>
+      </div>
 
       <Dialog open={editingId !== null} onOpenChange={(open) => !open && close()}>
         <DialogContent className="sm:max-w-lg">
@@ -259,7 +304,7 @@ export function ExperienceCard({ experience, onChange }) {
                 label="Upload company logo"
                 logo={draft.logo}
                 onChange={(logo) => setDraft({ ...draft, logo })}
-                fallback={<Briefcase className="size-6 text-muted-foreground" />}
+                fallback={fallbackIcon}
               />
             </div>
             <div className="grid gap-1.5">
@@ -295,13 +340,23 @@ export function ExperienceCard({ experience, onChange }) {
                 />
               </div>
               <div className="grid gap-1.5">
-                <Label htmlFor="exp-location">Location</Label>
+                <Label htmlFor="exp-location-type">Location type</Label>
                 <Input
-                  id="exp-location"
-                  value={draft.location}
-                  onChange={(e) => setDraft({ ...draft, location: e.target.value })}
+                  id="exp-location-type"
+                  value={draft.locationType}
+                  onChange={(e) => setDraft({ ...draft, locationType: e.target.value })}
+                  placeholder="On-site"
                 />
               </div>
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="exp-location">Location</Label>
+              <Input
+                id="exp-location"
+                value={draft.location}
+                onChange={(e) => setDraft({ ...draft, location: e.target.value })}
+                placeholder="Stockholm, Sweden"
+              />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="grid gap-1.5">
@@ -348,6 +403,12 @@ export function ExperienceCard({ experience, onChange }) {
                 onChange={(e) => setDraft({ ...draft, description: e.target.value })}
               />
             </div>
+            <SkillsField
+              key={editingId}
+              id="exp-skills"
+              skills={draft.skills}
+              onChange={(skills) => setDraft((d) => ({ ...d, skills }))}
+            />
             <DocumentAttachmentField
               id="exp-document"
               document={draft.document}
@@ -375,6 +436,6 @@ export function ExperienceCard({ experience, onChange }) {
         description="This will permanently remove the entry from your profile."
         onConfirm={confirmDelete}
       />
-    </Card>
+    </SectionCard>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Camera, Globe, Mail, MapPin, Pencil, Phone } from "lucide-react";
+import { Globe, Mail, Pencil, Phone, ShieldCheck } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,10 @@ export function IntroCard({ profile, onChange }) {
   const [draft, setDraft] = useState(profile);
   const [contactDraft, setContactDraft] = useState(profile.contact);
   const bannerInputRef = useRef(null);
+  const currentCompany = (
+    profile.experience.find((item) => item.current) ?? profile.experience[0]
+  )?.company;
+  const latestSchool = profile.education[0]?.school;
   const avatarInputRef = useRef(null);
 
   const openEdit = () => {
@@ -72,9 +76,9 @@ export function IntroCard({ profile, onChange }) {
 
   return (
     <>
-      <div className="break-inside-avoid overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10">
+      <section className="break-inside-avoid overflow-hidden bg-card sm:rounded-lg sm:ring-1 sm:ring-foreground/10">
         <div
-          className="relative h-48 w-full bg-[linear-gradient(120deg,#9fb8c8,#c9d6da)] bg-cover bg-center"
+          className="relative aspect-[4/1] w-full bg-[linear-gradient(120deg,#9fb8c8,#c9d6da)] bg-cover bg-center"
           style={
             profile.banner ? { backgroundImage: `url(${profile.banner})` } : undefined
           }
@@ -83,67 +87,77 @@ export function IntroCard({ profile, onChange }) {
             type="button"
             onClick={openEdit}
             aria-label="Edit background banner"
-            className="absolute right-3 top-3 flex size-9 items-center justify-center rounded-full bg-background/90 text-foreground shadow hover:bg-background print:hidden"
+            className="absolute right-3 top-3 flex size-10 items-center justify-center rounded-full bg-white text-black shadow-sm hover:bg-white/90 print:hidden"
           >
-            <Camera className="size-4" />
+            <Pencil className="size-5" strokeWidth={2} />
           </button>
         </div>
 
-        <div className="px-6 pb-6">
-          <div className="relative -mt-16 flex items-end justify-between">
-            <div className="relative">
-              <Avatar className="size-32 border-4 border-card bg-card [&_[data-slot=avatar-fallback]]:text-3xl">
-                <AvatarImage src={profile.avatar || undefined} alt={profile.name} />
-                <AvatarFallback>{initials(profile.name || "?")}</AvatarFallback>
-              </Avatar>
-              <button
-                type="button"
-                onClick={openEdit}
-                aria-label="Edit profile photo"
-                className="absolute bottom-1 right-1 flex size-9 items-center justify-center rounded-full border border-border bg-background text-foreground shadow hover:bg-muted print:hidden"
-              >
-                <Camera className="size-4" />
-              </button>
-            </div>
+        <div className="px-4 pb-5 sm:px-6">
+          {/* The photo's centre sits on the banner's bottom edge. */}
+          <div className="flex items-start justify-between">
+            <Avatar className="-mt-[52px] size-[104px] border-4 border-white bg-card dark:border-black sm:-mt-[68px] sm:size-[136px] [&_[data-slot=avatar-fallback]]:text-3xl">
+              <AvatarImage src={profile.avatar || undefined} alt={profile.name} />
+              <AvatarFallback>{initials(profile.name || "?")}</AvatarFallback>
+            </Avatar>
             <Button
               variant="ghost"
-              size="icon"
+              size="icon-lg"
               onClick={openEdit}
               aria-label="Edit intro"
-              className="mb-2 print:hidden"
+              className="-mr-2 mt-3 print:hidden"
             >
-              <Pencil className="size-5" />
+              <Pencil className="size-6" strokeWidth={1.5} />
             </Button>
           </div>
 
-          <div className="mt-4">
+          <div className="mt-3">
             {profile.name ? (
-              <h1 className="text-2xl font-semibold text-foreground">{profile.name}</h1>
+              <h1 className="flex items-center gap-2 text-2xl font-semibold leading-tight text-foreground">
+                {profile.name}
+                {profile.verified && (
+                  <ShieldCheck
+                    className="size-6 shrink-0 text-muted-foreground"
+                    strokeWidth={1.75}
+                    aria-label="Verified"
+                  />
+                )}
+              </h1>
             ) : (
               <button
                 type="button"
                 onClick={openEdit}
-                className="block text-lg font-semibold text-[#0a66c2] hover:underline print:hidden"
+                className="block text-lg font-semibold text-link hover:underline print:hidden"
               >
                 Add your name
               </button>
             )}
             {profile.headline && (
-              <p className="mt-1 text-base text-foreground/90">{profile.headline}</p>
+              <p className="mt-1 text-base leading-snug text-foreground">{profile.headline}</p>
             )}
-            {profile.location && (
-              <p className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
-                <MapPin className="size-3.5" />
-                {profile.location}
+            {(currentCompany || latestSchool) && (
+              <p className="mt-1 text-base leading-snug text-foreground">
+                {[currentCompany, latestSchool].filter(Boolean).join(" · ")}
               </p>
             )}
-            <button
-              type="button"
-              onClick={openContact}
-              className="mt-2 text-sm font-semibold text-[#0a66c2] hover:underline print:hidden"
-            >
-              Contact info
-            </button>
+            {profile.location && (
+              <p className="mt-1 text-base leading-snug text-muted-foreground">{profile.location}</p>
+            )}
+            <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-base">
+              {profile.connections && (
+                <>
+                  <span className="font-semibold text-link">{profile.connections} connections</span>
+                  <span className="text-muted-foreground print:hidden">·</span>
+                </>
+              )}
+              <button
+                type="button"
+                onClick={openContact}
+                className="font-semibold text-link hover:underline print:hidden"
+              >
+                Contact info
+              </button>
+            </p>
             {(profile.contact.email || profile.contact.phone || profile.contact.website) && (
               <div className="mt-2 hidden flex-col gap-0.5 text-sm text-foreground/80 print:flex">
                 {profile.contact.email && <span>{profile.contact.email}</span>}
@@ -153,7 +167,7 @@ export function IntroCard({ profile, onChange }) {
             )}
           </div>
         </div>
-      </div>
+      </section>
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="sm:max-w-lg">
@@ -250,6 +264,24 @@ export function IntroCard({ profile, onChange }) {
                 onChange={(e) => setDraft({ ...draft, location: e.target.value })}
               />
             </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="intro-connections">Connections</Label>
+              <Input
+                id="intro-connections"
+                value={draft.connections ?? ""}
+                onChange={(e) => setDraft({ ...draft, connections: e.target.value })}
+                placeholder="500+"
+              />
+            </div>
+            <label className="flex items-center gap-2 text-sm text-foreground/90">
+              <input
+                type="checkbox"
+                className="size-4"
+                checked={Boolean(draft.verified)}
+                onChange={(e) => setDraft({ ...draft, verified: e.target.checked })}
+              />
+              Show verified badge
+            </label>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditOpen(false)}>

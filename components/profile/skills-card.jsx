@@ -1,11 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Pencil, Plus, X } from "lucide-react";
+import { Plus, X } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -14,8 +13,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { EntryLogo, SectionCard, ShowAllFooter } from "@/components/profile/section-card";
 
-export function SkillsCard({ skills, onChange }) {
+const VISIBLE_SKILLS = 3;
+
+export function SkillsCard({ skills, sources, onChange }) {
+  const [expanded, setExpanded] = useState(false);
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(skills);
   const [newSkill, setNewSkill] = useState("");
@@ -40,51 +43,69 @@ export function SkillsCard({ skills, onChange }) {
     setOpen(false);
   };
 
+  // Every skill on the profile — the ones added here plus those tagged on
+  // experience, education and certifications — with the entries that use it.
+  const grouped = new Map(skills.map((skill) => [skill, []]));
+  for (const source of sources) {
+    for (const skill of source.skills ?? []) {
+      if (!grouped.has(skill)) grouped.set(skill, []);
+      grouped.get(skill).push(source);
+    }
+  }
+  // Skills backed by entries first, like LinkedIn; sort is stable so ties keep their order.
+  const allSkills = [...grouped.entries()].sort((a, b) => b[1].length - a[1].length);
+  const visible = expanded ? allSkills : allSkills.slice(0, VISIBLE_SKILLS);
+
   return (
-    <Card className="break-inside-avoid">
-      <CardHeader className="flex-row items-center justify-between">
-        <CardTitle className="text-xl">Skills</CardTitle>
-        <Button
-          variant="ghost"
-          size="icon"
+    <SectionCard
+      title="Skills"
+      count={allSkills.length}
+      onAdd={openEdit}
+      addLabel="Add skills"
+      onEdit={openEdit}
+      editLabel="Edit skills"
+      footer={
+        allSkills.length > VISIBLE_SKILLS && (
+          <ShowAllFooter
+            total={allSkills.length}
+            noun="skills"
+            expanded={expanded}
+            onToggle={() => setExpanded((e) => !e)}
+          />
+        )
+      }
+    >
+      {allSkills.length === 0 ? (
+        <button
+          type="button"
           onClick={openEdit}
-          aria-label="Edit skills"
-          className="print:hidden"
+          className="py-4 text-sm font-semibold text-link hover:underline print:hidden"
         >
-          <Pencil className="size-4" />
-        </Button>
-      </CardHeader>
-      <CardContent>
-        {skills.length === 0 ? (
-          <button
-            type="button"
-            onClick={openEdit}
-            className="text-sm font-semibold text-[#0a66c2] hover:underline print:hidden"
-          >
-            Add skills
-          </button>
-        ) : (
-          <div className="flex flex-wrap gap-2">
-            {skills.map((skill) => (
-              <Badge
-                key={skill}
-                variant="secondary"
-                className="h-auto gap-1 rounded-full py-1.5 pl-3 pr-2 text-sm font-normal"
-              >
-                {skill}
-                <button
-                  type="button"
-                  onClick={() => onChange(skills.filter((s) => s !== skill))}
-                  aria-label={`Remove ${skill}`}
-                  className="rounded-full p-0.5 hover:bg-foreground/10 print:hidden"
-                >
-                  <X className="size-3" />
-                </button>
-              </Badge>
-            ))}
-          </div>
-        )}
-      </CardContent>
+          Add skills
+        </button>
+      ) : (
+        <div className="flex flex-col divide-y divide-border">
+          {visible.map(([skill, used]) => (
+            <div key={skill} className="break-inside-avoid py-4">
+              <p className="text-base font-semibold text-foreground">{skill}</p>
+              {used.length > 0 && (
+                <ul className="mt-3 flex flex-col gap-3">
+                  {used.map((source) => (
+                    <li key={source.id} className="flex items-center gap-3">
+                      <EntryLogo
+                        logo={source.logo}
+                        fallback={source.icon}
+                        className="size-7 rounded [&_svg]:size-4"
+                      />
+                      <span className="text-base text-foreground">{source.name}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-md">
@@ -138,6 +159,6 @@ export function SkillsCard({ skills, onChange }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Card>
+    </SectionCard>
   );
 }

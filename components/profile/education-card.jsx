@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowDown, ArrowUp, GraduationCap, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, GraduationCap, Pencil, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -23,8 +22,18 @@ import {
   DocumentAttachment,
   DocumentAttachmentField,
 } from "@/components/profile/document-attachment";
+import {
+  EntryActions,
+  EntryLogo,
+  SectionCard,
+  ShowAllFooter,
+  SkillsField,
+  SkillsLine,
+} from "@/components/profile/section-card";
 import { schools } from "@/data/schools";
 import { generateMonogramDataUrl } from "@/lib/generate-monogram";
+
+const VISIBLE_ITEMS = 2;
 
 const emptyDraft = {
   school: "",
@@ -34,14 +43,20 @@ const emptyDraft = {
   endYear: "",
   description: "",
   logo: null,
+  skills: [],
   document: null,
 };
+
+const fallbackIcon = <GraduationCap className="size-6 text-muted-foreground" />;
 
 export function EducationCard({ education, onChange }) {
   const [editingId, setEditingId] = useState(null); // null closed, "new", or item id
   const [draft, setDraft] = useState(emptyDraft);
   const [deleteId, setDeleteId] = useState(null);
+  const [editMode, setEditMode] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const missingDocumentName = draft.document !== null && !draft.document.title.trim();
+  const visible = expanded ? education : education.slice(0, VISIBLE_ITEMS);
 
   const openAdd = () => {
     setDraft(emptyDraft);
@@ -49,7 +64,7 @@ export function EducationCard({ education, onChange }) {
   };
 
   const openEdit = (item) => {
-    setDraft({ document: null, ...item });
+    setDraft({ ...emptyDraft, ...item });
     setEditingId(item.id);
   };
 
@@ -83,89 +98,93 @@ export function EducationCard({ education, onChange }) {
   };
 
   return (
-    <Card>
-      <CardHeader className="flex-row items-center justify-between">
-        <CardTitle className="text-xl">Education</CardTitle>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={openAdd}
-          aria-label="Add education"
-          className="print:hidden"
-        >
-          <Plus className="size-5" />
-        </Button>
-      </CardHeader>
-      <CardContent className="flex flex-col divide-y">
-        {education.length === 0 && (
-          <p className="py-4 text-sm text-muted-foreground">No education added yet.</p>
-        )}
-        {education.map((item, index) => (
-          <div key={item.id} className="group flex break-inside-avoid gap-3 py-4 first:pt-0">
-            <div className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded bg-muted">
-              {item.logo ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={item.logo} alt="" className="size-full object-cover" />
-              ) : (
-                <GraduationCap className="size-6 text-muted-foreground" />
+    <SectionCard
+      title="Education"
+      count={education.length}
+      onAdd={openAdd}
+      addLabel="Add education"
+      onEdit={education.length ? () => setEditMode((m) => !m) : undefined}
+      editLabel="Edit education entries"
+      editing={editMode}
+      footer={
+        education.length > VISIBLE_ITEMS && (
+          <ShowAllFooter
+            total={education.length}
+            noun="educations"
+            expanded={expanded}
+            onToggle={() => setExpanded((e) => !e)}
+          />
+        )
+      }
+    >
+      {education.length === 0 && (
+        <p className="py-4 text-sm text-muted-foreground">No education added yet.</p>
+      )}
+      <div className="flex flex-col divide-y divide-border">
+        {visible.map((item, index) => (
+          <div key={item.id} className="relative flex break-inside-avoid gap-3 py-4">
+            <EntryLogo logo={item.logo} fallback={fallbackIcon} />
+            <div className="min-w-0 flex-1">
+              <p className="text-base font-semibold leading-snug text-foreground">{item.school}</p>
+              {(item.degree || item.fieldOfStudy) && (
+                <p className="text-base leading-snug text-foreground">
+                  {[item.degree, item.fieldOfStudy].filter(Boolean).join(", ")}
+                </p>
               )}
-            </div>
-            <div className="flex-1">
-              <p className="font-semibold text-foreground">{item.school}</p>
-              <p className="text-sm text-foreground/80">
-                {[item.degree, item.fieldOfStudy].filter(Boolean).join(", ")}
-              </p>
               {(item.startYear || item.endYear) && (
-                <p className="text-xs text-muted-foreground">
-                  {item.startYear || "—"} – {item.endYear || "—"}
+                <p className="text-base leading-snug text-muted-foreground">
+                  {[item.startYear, item.endYear].filter(Boolean).join("–")}
                 </p>
               )}
               {item.description && (
-                <p className="mt-2 whitespace-pre-line text-sm text-foreground/90">
+                <p className="mt-2 whitespace-pre-line text-base text-foreground">
                   {item.description}
                 </p>
               )}
+              <SkillsLine skills={item.skills} />
               {item.document && <DocumentAttachment document={item.document} />}
             </div>
-            <div className="flex shrink-0 gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 print:hidden">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => moveItem(index, -1)}
-                disabled={index === 0}
-                aria-label="Move education up"
-              >
-                <ArrowUp className="size-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => moveItem(index, 1)}
-                disabled={index === education.length - 1}
-                aria-label="Move education down"
-              >
-                <ArrowDown className="size-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => openEdit(item)}
-                aria-label="Edit education"
-              >
-                <Pencil className="size-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setDeleteId(item.id)}
-                aria-label="Delete education"
-              >
-                <Trash2 className="size-4" />
-              </Button>
-            </div>
+            {editMode && (
+              <EntryActions>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => moveItem(index, -1)}
+                  disabled={index === 0}
+                  aria-label="Move education up"
+                >
+                  <ArrowUp className="size-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => moveItem(index, 1)}
+                  disabled={index === education.length - 1}
+                  aria-label="Move education down"
+                >
+                  <ArrowDown className="size-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => openEdit(item)}
+                  aria-label="Edit education"
+                >
+                  <Pencil className="size-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setDeleteId(item.id)}
+                  aria-label="Delete education"
+                >
+                  <Trash2 className="size-4" />
+                </Button>
+              </EntryActions>
+            )}
           </div>
         ))}
-      </CardContent>
+      </div>
 
       <Dialog open={editingId !== null} onOpenChange={(open) => !open && close()}>
         <DialogContent className="sm:max-w-lg">
@@ -179,7 +198,7 @@ export function EducationCard({ education, onChange }) {
                 label="Upload school logo"
                 logo={draft.logo}
                 onChange={(logo) => setDraft({ ...draft, logo })}
-                fallback={<GraduationCap className="size-6 text-muted-foreground" />}
+                fallback={fallbackIcon}
               />
             </div>
             <div className="grid gap-1.5">
@@ -217,21 +236,21 @@ export function EducationCard({ education, onChange }) {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="grid gap-1.5">
-                <Label htmlFor="edu-start">Start year</Label>
+                <Label htmlFor="edu-start">Start date</Label>
                 <Input
                   id="edu-start"
                   value={draft.startYear}
                   onChange={(e) => setDraft({ ...draft, startYear: e.target.value })}
-                  placeholder="2015"
+                  placeholder="Aug 2026"
                 />
               </div>
               <div className="grid gap-1.5">
-                <Label htmlFor="edu-end">End year</Label>
+                <Label htmlFor="edu-end">End date</Label>
                 <Input
                   id="edu-end"
                   value={draft.endYear}
                   onChange={(e) => setDraft({ ...draft, endYear: e.target.value })}
-                  placeholder="2019"
+                  placeholder="Jan 2031"
                 />
               </div>
             </div>
@@ -244,6 +263,12 @@ export function EducationCard({ education, onChange }) {
                 onChange={(e) => setDraft({ ...draft, description: e.target.value })}
               />
             </div>
+            <SkillsField
+              key={editingId}
+              id="edu-skills"
+              skills={draft.skills}
+              onChange={(skills) => setDraft((d) => ({ ...d, skills }))}
+            />
             <DocumentAttachmentField
               id="edu-document"
               document={draft.document}
@@ -268,6 +293,6 @@ export function EducationCard({ education, onChange }) {
         description="This will permanently remove the entry from your profile."
         onConfirm={confirmDelete}
       />
-    </Card>
+    </SectionCard>
   );
 }

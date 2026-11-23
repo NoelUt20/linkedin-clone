@@ -1,0 +1,116 @@
+"use client";
+
+import { useState } from "react";
+import {
+  ArrowLeft,
+  Bell,
+  Briefcase,
+  Download,
+  House,
+  Menu,
+  Moon,
+  Settings,
+  Sun,
+  Trash2,
+  Users,
+} from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useTheme } from "@/components/profile/theme-toggle";
+
+// Phone-only app chrome modelled on LinkedIn's mobile app. The search and
+// tab bar are decorative; the gear opens the settings that live in the
+// desktop header (theme, export, delete).
+export function MobileTopBar({ onExport, onDeleteAll }) {
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [dark, toggleTheme] = useTheme();
+
+  return (
+    <>
+      <div className="sticky top-0 z-30 flex items-center gap-3 border-b-8 border-page bg-card px-3 py-2 sm:hidden print:hidden">
+        <Button variant="ghost" size="icon-lg" aria-label="Back" tabIndex={-1}>
+          <ArrowLeft className="size-6" strokeWidth={1.75} />
+        </Button>
+        <div className="flex h-9 flex-1 items-center rounded-full border border-foreground/40 px-4 text-base text-muted-foreground">
+          Search
+        </div>
+        <Button
+          variant="ghost"
+          size="icon-lg"
+          onClick={() => setSettingsOpen(true)}
+          aria-label="Settings"
+        >
+          <Settings className="size-6" strokeWidth={1.75} />
+        </Button>
+      </div>
+
+      <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Settings</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-2">
+            <Button variant="outline" className="justify-start" onClick={toggleTheme}>
+              {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
+              {dark ? "Switch to light mode" : "Switch to dark mode"}
+            </Button>
+            <Button
+              variant="outline"
+              className="justify-start"
+              onClick={() => {
+                setSettingsOpen(false);
+                // Let the dialog close before the print dialog snapshots the page.
+                setTimeout(onExport, 150);
+              }}
+            >
+              <Download className="size-4" />
+              Export to PDF
+            </Button>
+            <Button
+              variant="destructive"
+              className="justify-start"
+              onClick={() => {
+                setSettingsOpen(false);
+                onDeleteAll();
+              }}
+            >
+              <Trash2 className="size-4" />
+              Delete all
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+const NAV_ITEMS = [
+  { label: "Home", icon: House },
+  { label: "Jobs", icon: Briefcase },
+  { label: "My Network", icon: Users, active: true },
+  { label: "Notifications", icon: Bell },
+  { label: "More", icon: Menu },
+];
+
+export function MobileBottomNav() {
+  return (
+    <nav
+      aria-hidden="true"
+      className="fixed inset-x-0 bottom-0 z-30 flex border-t border-border bg-card pb-[env(safe-area-inset-bottom)] sm:hidden print:hidden"
+    >
+      {NAV_ITEMS.map(({ label, icon: Icon, active }) => (
+        <div
+          key={label}
+          className={`relative flex flex-1 flex-col items-center gap-0.5 pb-1.5 pt-2 text-xs ${
+            active ? "text-foreground" : "text-muted-foreground"
+          }`}
+        >
+          {active && <span className="absolute inset-x-3 top-0 h-0.5 rounded bg-foreground" />}
+          <Icon className="size-6" strokeWidth={active ? 2.25 : 1.75} />
+          <span className="truncate">{label}</span>
+        </div>
+      ))}
+    </nav>
+  );
+}

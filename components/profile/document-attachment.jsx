@@ -30,12 +30,12 @@ function DocumentPage({ document, page }) {
           </>
         )}
         {paragraphs.map((paragraph, i) => (
-          <p key={i} className="mb-3 text-[13px] leading-[1.4] text-neutral-600">
+          <p key={i} className="mb-3 text-[12px] leading-[1.4] text-neutral-600">
             {paragraph}
           </p>
         ))}
       </div>
-      <span className="absolute bottom-2 right-2 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-medium text-white">
+      <span className="absolute bottom-2 right-2 rounded bg-black/70 px-1.5 py-0.5 text-[9px] font-medium text-white">
         Page {page}
       </span>
     </div>
@@ -46,7 +46,7 @@ function DocumentPage({ document, page }) {
 // like the media attachments on a LinkedIn profile.
 function DocumentThumbnail({ document }) {
   return (
-    <div className="flex h-[88px] w-[134px] shrink-0 flex-col items-center justify-center gap-[3px] overflow-hidden rounded-lg bg-white px-3 text-center ring-1 ring-foreground/15">
+    <div className="flex h-[74px] w-[112px] shrink-0 flex-col items-center justify-center gap-[3px] overflow-hidden rounded-lg bg-white px-3 text-center ring-1 ring-foreground/15 sm:h-[88px] sm:w-[134px]">
       <p className="text-[4px] leading-none text-neutral-500">{document.paragraphs[0].slice(0, 40)}</p>
       <p className="text-[6px] font-bold leading-tight text-neutral-900">{document.title}</p>
       <p className="text-[4.5px] font-semibold leading-tight text-neutral-700">{document.heading}</p>
@@ -69,10 +69,10 @@ export function DocumentAttachment({ document }) {
           setPage(1);
           setOpen(true);
         }}
-        className="mt-3 flex items-center gap-4 rounded-lg text-left hover:opacity-90"
+        className="mt-3 flex w-full items-center gap-3 rounded-lg text-left hover:opacity-90 sm:gap-4"
       >
         <DocumentThumbnail document={document} />
-        <span className="font-semibold text-foreground">{document.title}</span>
+        <span className="min-w-0 flex-1 font-semibold text-foreground">{document.title}</span>
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>

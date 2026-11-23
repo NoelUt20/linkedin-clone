@@ -2,12 +2,30 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark {
+  @media screen {
+    &:is(.dark *) {
+      @slot;
+    }
+  }
+}
+
+/* Every text size is 1px smaller than Tailwind's defaults. */
+@theme {
+  --text-xs: 0.6875rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.9375rem;
+  --text-lg: 1.0625rem;
+  --text-xl: 1.1875rem;
+  --text-2xl: 1.4375rem;
+  --text-3xl: 1.8125rem;
+}
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  /* LinkedIn's font stack: San Francisco on Apple devices, Segoe UI on Windows. */
+  --font-sans: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Fira Sans", Ubuntu, Oxygen, Cantarell, "Droid Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Lucida Grande", Helvetica, Arial, sans-serif;
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -39,6 +57,8 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-page: var(--page);
+  --color-link: var(--link);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -81,40 +101,48 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  --page: #f4f2ee;
+  --link: #0a66c2;
 }
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+/* LinkedIn's dark mode palette. Screen only, so prints stay light. */
+@media screen {
+  .dark {
+    color-scheme: dark;
+    --page: #000000;
+    --link: #71b7fb;
+    --background: #1b1f23;
+    --foreground: rgb(255 255 255 / 90%);
+    --card: #1b1f23;
+    --card-foreground: rgb(255 255 255 / 90%);
+    --popover: #1b1f23;
+    --popover-foreground: rgb(255 255 255 / 90%);
+    --primary: #71b7fb;
+    --primary-foreground: #000000;
+    --secondary: #38434f;
+    --secondary-foreground: rgb(255 255 255 / 90%);
+    --muted: #293138;
+    --muted-foreground: rgb(255 255 255 / 60%);
+    --accent: #38434f;
+    --accent-foreground: rgb(255 255 255 / 90%);
+    --destructive: #f87171;
+    --border: rgb(255 255 255 / 15%);
+    --input: rgb(255 255 255 / 20%);
+    --ring: #71b7fb;
+    --chart-1: oklch(0.87 0 0);
+    --chart-2: oklch(0.556 0 0);
+    --chart-3: oklch(0.439 0 0);
+    --chart-4: oklch(0.371 0 0);
+    --chart-5: oklch(0.269 0 0);
+    --sidebar: #1b1f23;
+    --sidebar-foreground: rgb(255 255 255 / 90%);
+    --sidebar-primary: #71b7fb;
+    --sidebar-primary-foreground: #000000;
+    --sidebar-accent: #38434f;
+    --sidebar-accent-foreground: rgb(255 255 255 / 90%);
+    --sidebar-border: rgb(255 255 255 / 15%);
+    --sidebar-ring: #71b7fb;
+  }
 }
 
 @layer base {
@@ -122,7 +150,7 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-base text-foreground;
   }
   html {
     @apply font-sans;
