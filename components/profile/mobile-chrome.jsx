@@ -3,18 +3,13 @@
 import { useState } from "react";
 import {
   ArrowLeft,
-  Bell,
-  Briefcase,
   Check,
   Download,
-  House,
-  Menu,
   Moon,
   Plus,
   Settings,
   Sun,
   Trash2,
-  Users,
 } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -100,7 +95,7 @@ function ProfilesMenu({ open, onOpenChange, profiles, activeId, onSwitch, onAdd,
 }
 
 // Phone-only app chrome modelled on LinkedIn's mobile app. The back arrow
-// lists the app's profiles; search and the tab bar are decorative; the gear
+// lists the app's profiles; search is decorative; the gear
 // opens the settings that live in the desktop header (theme, export, delete).
 export function MobileTopBar({ profiles, activeId, onSwitch, onAdd, onRemove, onExport, onDeleteAll }) {
   const [profilesOpen, setProfilesOpen] = useState(false);
@@ -178,35 +173,5 @@ export function MobileTopBar({ profiles, activeId, onSwitch, onAdd, onRemove, on
         </DialogContent>
       </Dialog>
     </>
-  );
-}
-
-const NAV_ITEMS = [
-  { label: "Home", icon: House },
-  { label: "Jobs", icon: Briefcase },
-  { label: "My Network", icon: Users, active: true },
-  { label: "Notifications", icon: Bell },
-  { label: "More", icon: Menu },
-];
-
-export function MobileBottomNav() {
-  return (
-    <nav
-      aria-hidden="true"
-      className="fixed inset-x-0 bottom-0 z-30 flex border-t border-border bg-card pb-[env(safe-area-inset-bottom)] sm:hidden print:hidden"
-    >
-      {NAV_ITEMS.map(({ label, icon: Icon, active }) => (
-        <div
-          key={label}
-          className={`relative flex flex-1 flex-col items-center gap-0.5 pb-1.5 pt-2 text-xs ${
-            active ? "text-foreground" : "text-muted-foreground"
-          }`}
-        >
-          {active && <span className="absolute inset-x-3 top-0 h-0.5 rounded bg-foreground" />}
-          <Icon className="size-6" strokeWidth={active ? 2.25 : 1.75} />
-          <span className="truncate">{label}</span>
-        </div>
-      ))}
-    </nav>
   );
 }

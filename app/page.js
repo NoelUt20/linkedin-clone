@@ -9,7 +9,7 @@ import { ConfirmDeleteDialog } from "@/components/profile/confirm-delete-dialog"
 import { EducationCard } from "@/components/profile/education-card";
 import { ExperienceCard } from "@/components/profile/experience-card";
 import { IntroCard } from "@/components/profile/intro-card";
-import { MobileBottomNav, MobileTopBar } from "@/components/profile/mobile-chrome";
+import { MobileTopBar } from "@/components/profile/mobile-chrome";
 import { ProfileTabBar } from "@/components/profile/profile-tab-bar";
 import { SkillsCard } from "@/components/profile/skills-card";
 import { ThemeToggle } from "@/components/profile/theme-toggle";
@@ -67,7 +67,7 @@ export default function ProfilePage() {
   const slug = profile.name.trim() ? profile.name.toLowerCase().replace(/\s+/g, "-") : "your-name";
 
   return (
-    <div className="min-h-screen bg-page pb-20 sm:pb-0">
+    <div className="min-h-screen bg-page">
       <MobileTopBar
         profiles={profiles}
         activeId={activeId}
@@ -167,7 +167,6 @@ export default function ProfilePage() {
         confirmLabel="Close profile"
       />
 
-      <MobileBottomNav />
     </div>
   );
 }
