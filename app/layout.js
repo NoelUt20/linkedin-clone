@@ -8,7 +8,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Alex Morgan | LinkedIn Profile Clone",
+  title: "LinkedIn Profile Clone",
   description: "An editable LinkedIn profile page clone.",
 };
 

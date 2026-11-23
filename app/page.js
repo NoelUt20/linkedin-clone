@@ -15,7 +15,6 @@ import { SkillsCard } from "@/components/profile/skills-card";
 import { ThemeToggle } from "@/components/profile/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { emptyProfile } from "@/data/empty-profile";
-import { initialProfile } from "@/data/initial-profile";
 import { useProfilesStorage } from "@/lib/use-profiles-storage";
 
 export default function ProfilePage() {
@@ -30,7 +29,7 @@ export default function ProfilePage() {
     addProfile,
     removeProfile,
     resetActiveData,
-  } = useProfilesStorage(initialProfile, emptyProfile);
+  } = useProfilesStorage(emptyProfile, emptyProfile);
 
   const [resetOpen, setResetOpen] = useState(false);
   const [closeTabId, setCloseTabId] = useState(null);
