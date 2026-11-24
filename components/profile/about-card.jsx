@@ -12,12 +12,10 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { SectionCard } from "@/components/profile/section-card";
-import { cn } from "@/lib/utils";
 
 export function AboutCard({ about, onChange }) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(about);
-  const [expanded, setExpanded] = useState(false);
 
   const openEdit = () => {
     setDraft(about);
@@ -33,23 +31,9 @@ export function AboutCard({ about, onChange }) {
     <SectionCard title="About" onEdit={openEdit} editLabel="Edit about">
       {about ? (
         <div className="pt-2">
-          <p
-            className={cn(
-              "whitespace-pre-line text-base text-foreground",
-              !expanded && "line-clamp-4 print:line-clamp-none"
-            )}
-          >
+          <p className="whitespace-pre-line text-base text-foreground">
             {about}
           </p>
-          {!expanded && about.length > 150 && (
-            <button
-              type="button"
-              onClick={() => setExpanded(true)}
-              className="text-base text-muted-foreground hover:underline print:hidden"
-            >
-              …see more
-            </button>
-          )}
         </div>
       ) : (
         <button

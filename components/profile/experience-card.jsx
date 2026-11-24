@@ -26,15 +26,12 @@ import {
   EntryActions,
   EntryLogo,
   SectionCard,
-  ShowAllFooter,
   SkillsField,
   SkillsLine,
 } from "@/components/profile/section-card";
 import { companies } from "@/data/companies";
 import { formatSpan } from "@/lib/duration";
 import { generateMonogramDataUrl } from "@/lib/generate-monogram";
-
-const VISIBLE_GROUPS = 3;
 
 const emptyDraft = {
   title: "",
@@ -94,10 +91,8 @@ export function ExperienceCard({ experience, onChange }) {
   const [draft, setDraft] = useState(emptyDraft);
   const [deleteId, setDeleteId] = useState(null);
   const [editMode, setEditMode] = useState(false);
-  const [expanded, setExpanded] = useState(false);
 
   const groups = useMemo(() => groupByCompany(experience), [experience]);
-  const visibleGroups = expanded ? groups : groups.slice(0, VISIBLE_GROUPS);
   const missingDocumentName = draft.document !== null && !draft.document.title.trim();
 
   const openAdd = () => {
@@ -187,22 +182,12 @@ export function ExperienceCard({ experience, onChange }) {
       onEdit={experience.length ? () => setEditMode((m) => !m) : undefined}
       editLabel="Edit experience entries"
       editing={editMode}
-      footer={
-        groups.length > VISIBLE_GROUPS && (
-          <ShowAllFooter
-            total={experience.length}
-            noun="experiences"
-            expanded={expanded}
-            onToggle={() => setExpanded((e) => !e)}
-          />
-        )
-      }
     >
       {experience.length === 0 && (
         <p className="py-4 text-sm text-muted-foreground">No experience added yet.</p>
       )}
       <div className="flex flex-col divide-y divide-border">
-        {visibleGroups.map((group) => {
+        {groups.map((group) => {
           if (group.entries.length === 1) {
             const { item, index } = group.entries[0];
             return (

@@ -26,14 +26,11 @@ import {
   EntryActions,
   EntryLogo,
   SectionCard,
-  ShowAllFooter,
   SkillsField,
   SkillsLine,
 } from "@/components/profile/section-card";
 import { schools } from "@/data/schools";
 import { generateMonogramDataUrl } from "@/lib/generate-monogram";
-
-const VISIBLE_ITEMS = 2;
 
 const emptyDraft = {
   school: "",
@@ -54,9 +51,7 @@ export function EducationCard({ education, onChange }) {
   const [draft, setDraft] = useState(emptyDraft);
   const [deleteId, setDeleteId] = useState(null);
   const [editMode, setEditMode] = useState(false);
-  const [expanded, setExpanded] = useState(false);
   const missingDocumentName = draft.document !== null && !draft.document.title.trim();
-  const visible = expanded ? education : education.slice(0, VISIBLE_ITEMS);
 
   const openAdd = () => {
     setDraft(emptyDraft);
@@ -106,22 +101,12 @@ export function EducationCard({ education, onChange }) {
       onEdit={education.length ? () => setEditMode((m) => !m) : undefined}
       editLabel="Edit education entries"
       editing={editMode}
-      footer={
-        education.length > VISIBLE_ITEMS && (
-          <ShowAllFooter
-            total={education.length}
-            noun="educations"
-            expanded={expanded}
-            onToggle={() => setExpanded((e) => !e)}
-          />
-        )
-      }
     >
       {education.length === 0 && (
         <p className="py-4 text-sm text-muted-foreground">No education added yet.</p>
       )}
       <div className="flex flex-col divide-y divide-border">
-        {visible.map((item, index) => (
+        {education.map((item, index) => (
           <div key={item.id} className="relative flex break-inside-avoid gap-3 py-4">
             <EntryLogo logo={item.logo} fallback={fallbackIcon} />
             <div className="min-w-0 flex-1">

@@ -13,12 +13,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { EntryLogo, SectionCard, ShowAllFooter } from "@/components/profile/section-card";
-
-const VISIBLE_SKILLS = 3;
+import { EntryLogo, SectionCard } from "@/components/profile/section-card";
 
 export function SkillsCard({ skills, sources, onChange }) {
-  const [expanded, setExpanded] = useState(false);
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(skills);
   const [newSkill, setNewSkill] = useState("");
@@ -54,7 +51,6 @@ export function SkillsCard({ skills, sources, onChange }) {
   }
   // Skills backed by entries first, like LinkedIn; sort is stable so ties keep their order.
   const allSkills = [...grouped.entries()].sort((a, b) => b[1].length - a[1].length);
-  const visible = expanded ? allSkills : allSkills.slice(0, VISIBLE_SKILLS);
 
   return (
     <SectionCard
@@ -64,16 +60,6 @@ export function SkillsCard({ skills, sources, onChange }) {
       addLabel="Add skills"
       onEdit={openEdit}
       editLabel="Edit skills"
-      footer={
-        allSkills.length > VISIBLE_SKILLS && (
-          <ShowAllFooter
-            total={allSkills.length}
-            noun="skills"
-            expanded={expanded}
-            onToggle={() => setExpanded((e) => !e)}
-          />
-        )
-      }
     >
       {allSkills.length === 0 ? (
         <button
@@ -85,7 +71,7 @@ export function SkillsCard({ skills, sources, onChange }) {
         </button>
       ) : (
         <div className="flex flex-col divide-y divide-border">
-          {visible.map(([skill, used]) => (
+          {allSkills.map(([skill, used]) => (
             <div key={skill} className="break-inside-avoid py-4">
               <p className="text-base font-semibold text-foreground">{skill}</p>
               {used.length > 0 && (

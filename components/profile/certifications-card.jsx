@@ -19,13 +19,10 @@ import {
   EntryActions,
   EntryLogo,
   SectionCard,
-  ShowAllFooter,
   SkillsField,
   SkillsLine,
 } from "@/components/profile/section-card";
 import { generateMonogramDataUrl } from "@/lib/generate-monogram";
-
-const VISIBLE_ITEMS = 3;
 
 const emptyDraft = {
   name: "",
@@ -49,8 +46,6 @@ export function CertificationsCard({ certifications, onChange }) {
   const [draft, setDraft] = useState(emptyDraft);
   const [deleteId, setDeleteId] = useState(null);
   const [editMode, setEditMode] = useState(false);
-  const [expanded, setExpanded] = useState(false);
-  const visible = expanded ? certifications : certifications.slice(0, VISIBLE_ITEMS);
 
   const openAdd = () => {
     setDraft(emptyDraft);
@@ -100,22 +95,12 @@ export function CertificationsCard({ certifications, onChange }) {
       onEdit={certifications.length ? () => setEditMode((m) => !m) : undefined}
       editLabel="Edit licenses and certifications"
       editing={editMode}
-      footer={
-        certifications.length > VISIBLE_ITEMS && (
-          <ShowAllFooter
-            total={certifications.length}
-            noun="licenses & certifications"
-            expanded={expanded}
-            onToggle={() => setExpanded((e) => !e)}
-          />
-        )
-      }
     >
       {certifications.length === 0 && (
         <p className="py-4 text-sm text-muted-foreground">No licenses or certifications yet.</p>
       )}
       <div className="flex flex-col divide-y divide-border">
-        {visible.map((item, index) => (
+        {certifications.map((item, index) => (
           <div key={item.id} className="relative flex break-inside-avoid gap-3 py-4">
             <EntryLogo logo={item.logo} fallback={fallbackIcon} />
             <div className="min-w-0 flex-1">

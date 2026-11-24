@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight, Check, Gem, Pencil, Plus } from "lucide-react";
+import { Check, Gem, Pencil, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,20 +49,6 @@ export function SectionCard({ title, count, onAdd, addLabel, onEdit, editLabel, 
       <div className="px-4 pb-4 sm:px-6">{children}</div>
       {footer}
     </section>
-  );
-}
-
-// "Show all 3 educations →" bar at the bottom of a section.
-export function ShowAllFooter({ total, noun, expanded, onToggle }) {
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      className="flex w-full items-center justify-center gap-1.5 border-t border-border py-3 text-base font-semibold text-foreground/75 hover:bg-foreground/5 sm:rounded-b-lg print:hidden"
-    >
-      {expanded ? "Show less" : `Show all ${total} ${noun}`}
-      {!expanded && <ArrowRight className="size-5" strokeWidth={1.75} />}
-    </button>
   );
 }
 
