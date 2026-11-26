@@ -25,13 +25,16 @@ import {
 import {
   EntryActions,
   EntryLogo,
+  OrderNote,
   SectionCard,
   SkillsField,
   SkillsLine,
 } from "@/components/profile/section-card";
 import { companies } from "@/data/companies";
+import { formatMonthValue, toMonthInput } from "@/lib/dates";
 import { formatSpan } from "@/lib/duration";
-import { generateMonogramDataUrl } from "@/lib/generate-monogram";
+import { displayLogo, isAutoLogo, logoUrl, resolveLogo } from "@/lib/logo";
+import { experienceRange, insertSorted, orderEntries, sortByDate } from "@/lib/sort-entries";
 
 const emptyDraft = {
   title: "",
@@ -66,8 +69,8 @@ function groupByCompany(experience) {
 }
 
 function dateRange(item) {
-  const end = item.current ? "Present" : item.endDate;
-  const range = [item.startDate, end].filter(Boolean).join("–");
+  const end = item.current ? "Present" : formatMonthValue(item.endDate);
+  const range = [formatMonthValue(item.startDate), end].filter(Boolean).join("–");
   const span = formatSpan([item]);
   return [range, span].filter(Boolean).join(" · ");
 }
@@ -86,13 +89,21 @@ function RoleDetails({ item }) {
   );
 }
 
-export function ExperienceCard({ experience, onChange }) {
+// `manualOrder` is true once the user has used the arrows; until then the list
+// always follows the dates. `onChange(list, manual)` reports both.
+export function ExperienceCard({ experience, manualOrder = false, onChange }) {
   const [editingId, setEditingId] = useState(null); // null closed, "new", or item id
   const [draft, setDraft] = useState(emptyDraft);
   const [deleteId, setDeleteId] = useState(null);
   const [editMode, setEditMode] = useState(false);
 
-  const groups = useMemo(() => groupByCompany(experience), [experience]);
+  const ordered = useMemo(
+    () => orderEntries(experience, experienceRange, manualOrder),
+    [experience, manualOrder]
+  );
+  const groups = useMemo(() => groupByCompany(ordered), [ordered]);
+  const endBeforeStart =
+    !draft.current && draft.startDate && draft.endDate && draft.endDate < draft.startDate;
   const missingDocumentName = draft.document !== null && !draft.document.title.trim();
 
   const openAdd = () => {
@@ -101,37 +112,50 @@ export function ExperienceCard({ experience, onChange }) {
   };
 
   const openEdit = (item) => {
-    setDraft({ ...emptyDraft, ...item });
+    // Older entries hold free-text dates; convert them so the pickers open filled in.
+    setDraft({
+      ...emptyDraft,
+      ...item,
+      startDate: toMonthInput(item.startDate),
+      endDate: toMonthInput(item.endDate),
+    });
     setEditingId(item.id);
   };
 
   const close = () => setEditingId(null);
 
+  // Sorted by date unless the user has set their own order, which is left alone.
+  const commit = (list) =>
+    onChange(manualOrder ? list : sortByDate(list, experienceRange), manualOrder);
+
   const handleSave = () => {
-    if (!draft.title.trim() || !draft.company.trim() || missingDocumentName) return;
-    const saved = { ...draft, document: cleanDocument(draft.document) };
+    if (!draft.title.trim() || !draft.company.trim() || missingDocumentName || endBeforeStart) {
+      return;
+    }
+    const saved = {
+      ...draft,
+      logo: resolveLogo(companies, draft.company, draft.logo),
+      document: cleanDocument(draft.document),
+    };
     if (editingId === "new") {
-      onChange([...experience, { ...saved, id: `exp-${Date.now()}` }]);
+      const item = { ...saved, id: `exp-${Date.now()}` };
+      commit(manualOrder ? insertSorted(ordered, item, experienceRange) : [...ordered, item]);
     } else {
-      onChange(
-        experience.map((item) =>
-          item.id === editingId ? { ...saved, id: editingId } : item
-        )
-      );
+      commit(ordered.map((item) => (item.id === editingId ? { ...saved, id: editingId } : item)));
     }
     close();
   };
 
   const confirmDelete = () => {
-    onChange(experience.filter((item) => item.id !== deleteId));
+    commit(ordered.filter((item) => item.id !== deleteId));
   };
 
   const moveItem = (index, direction) => {
     const newIndex = index + direction;
-    if (newIndex < 0 || newIndex >= experience.length) return;
-    const next = [...experience];
+    if (newIndex < 0 || newIndex >= ordered.length) return;
+    const next = [...ordered];
     [next[index], next[newIndex]] = [next[newIndex], next[index]];
-    onChange(next);
+    onChange(next, true);
   };
 
   const actions = (item, index) =>
@@ -150,7 +174,7 @@ export function ExperienceCard({ experience, onChange }) {
           variant="ghost"
           size="icon"
           onClick={() => moveItem(index, 1)}
-          disabled={index === experience.length - 1}
+          disabled={index === ordered.length - 1}
           aria-label="Move experience down"
         >
           <ArrowDown className="size-4" />
@@ -186,13 +210,22 @@ export function ExperienceCard({ experience, onChange }) {
       {experience.length === 0 && (
         <p className="py-4 text-sm text-muted-foreground">No experience added yet.</p>
       )}
+      {editMode && experience.length > 1 && (
+        <OrderNote
+          manual={manualOrder}
+          onSortByDate={() => onChange(sortByDate(ordered, experienceRange), false)}
+        />
+      )}
       <div className="flex flex-col divide-y divide-border">
         {groups.map((group) => {
           if (group.entries.length === 1) {
             const { item, index } = group.entries[0];
             return (
               <div key={item.id} className="relative flex break-inside-avoid gap-3 py-4">
-                <EntryLogo logo={item.logo} fallback={fallbackIcon} />
+                <EntryLogo
+                  logo={displayLogo(companies, item.company, item.logo)}
+                  fallback={fallbackIcon}
+                />
                 <div className="min-w-0 flex-1">
                   <p className="text-base font-semibold leading-snug text-foreground">
                     {item.title}
@@ -215,7 +248,8 @@ export function ExperienceCard({ experience, onChange }) {
 
           const items = group.entries.map(({ item }) => item);
           const first = items[0];
-          const groupLogo = items.find((item) => item.logo)?.logo ?? null;
+          const groupLogo =
+            items.map((item) => displayLogo(companies, item.company, item.logo)).find(Boolean) ?? null;
           const employmentType = items.find((item) => item.employmentType)?.employmentType;
           const locationType = items.find((item) => item.locationType)?.locationType;
           return (
@@ -306,9 +340,9 @@ export function ExperienceCard({ experience, onChange }) {
                 id="exp-company"
                 value={draft.company}
                 onChange={(company) => setDraft((d) => ({ ...d, company }))}
-                onSelect={(company) =>
+                onSelect={(option) =>
                   setDraft((d) =>
-                    d.logo ? d : { ...d, logo: generateMonogramDataUrl(company) }
+                    isAutoLogo(d.logo) ? { ...d, logo: logoUrl(option.domain) } : d
                   )
                 }
                 options={companies}
@@ -348,22 +382,29 @@ export function ExperienceCard({ experience, onChange }) {
                 <Label htmlFor="exp-start">Start date</Label>
                 <Input
                   id="exp-start"
+                  type="month"
                   value={draft.startDate}
                   onChange={(e) => setDraft({ ...draft, startDate: e.target.value })}
-                  placeholder="Jan 2022"
                 />
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="exp-end">End date</Label>
                 <Input
                   id="exp-end"
+                  type="month"
                   value={draft.endDate}
+                  min={draft.startDate || undefined}
                   disabled={draft.current}
+                  aria-invalid={endBeforeStart ? true : undefined}
                   onChange={(e) => setDraft({ ...draft, endDate: e.target.value })}
-                  placeholder="Dec 2023"
                 />
               </div>
             </div>
+            {endBeforeStart && (
+              <p className="-mt-2 text-sm text-destructive">
+                End date can&apos;t be before the start date.
+              </p>
+            )}
             <label className="flex items-center gap-2 text-sm text-foreground/90">
               <input
                 type="checkbox"
@@ -406,7 +447,12 @@ export function ExperienceCard({ experience, onChange }) {
             </Button>
             <Button
               onClick={handleSave}
-              disabled={!draft.title.trim() || !draft.company.trim() || missingDocumentName}
+              disabled={
+                !draft.title.trim() ||
+                !draft.company.trim() ||
+                missingDocumentName ||
+                endBeforeStart
+              }
             >
               Save
             </Button>

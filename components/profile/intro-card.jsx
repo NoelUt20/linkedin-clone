@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { initials } from "@/lib/initials";
 import { resizeImageToDataUrl } from "@/lib/resize-image";
+import { educationRange, experienceRange, orderEntries } from "@/lib/sort-entries";
 
 export function IntroCard({ profile, onChange }) {
   const [editOpen, setEditOpen] = useState(false);
@@ -23,10 +24,14 @@ export function IntroCard({ profile, onChange }) {
   const [draft, setDraft] = useState(profile);
   const [contactDraft, setContactDraft] = useState(profile.contact);
   const bannerInputRef = useRef(null);
-  const currentCompany = (
-    profile.experience.find((item) => item.current) ?? profile.experience[0]
-  )?.company;
-  const latestSchool = profile.education[0]?.school;
+  // The employer and school at the top of the sections below.
+  const topRole = orderEntries(profile.experience, experienceRange, profile.manualOrder?.experience)[0];
+  const currentCompany = topRole?.company;
+  const latestSchool = orderEntries(
+    profile.education,
+    educationRange,
+    profile.manualOrder?.education
+  )[0]?.school;
   const avatarInputRef = useRef(null);
 
   const openEdit = () => {

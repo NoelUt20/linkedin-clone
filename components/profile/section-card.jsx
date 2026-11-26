@@ -6,6 +6,7 @@ import { Check, Gem, Pencil, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { GENERIC_ICON_MAX_WIDTH, isServiceLogo } from "@/lib/logo";
 import { cn } from "@/lib/utils";
 
 // LinkedIn's mobile section: full-bleed on phones (the black page shows
@@ -53,6 +54,9 @@ export function SectionCard({ title, count, onAdd, addLabel, onEdit, editLabel, 
 }
 
 export function EntryLogo({ logo, fallback, className }) {
+  // A logo URL can fail (offline, blocked) or turn out to be the service's generic
+  // globe; either way fall back to the placeholder.
+  const [failedLogo, setFailedLogo] = useState(null);
   return (
     <div
       className={cn(
@@ -60,9 +64,20 @@ export function EntryLogo({ logo, fallback, className }) {
         className
       )}
     >
-      {logo ? (
+      {logo && logo !== failedLogo ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={logo} alt="" className="size-full object-cover" />
+        <img
+          src={logo}
+          alt=""
+          loading="lazy"
+          onError={() => setFailedLogo(logo)}
+          onLoad={(e) => {
+            if (isServiceLogo(logo) && e.currentTarget.naturalWidth <= GENERIC_ICON_MAX_WIDTH) {
+              setFailedLogo(logo);
+            }
+          }}
+          className="size-full object-cover"
+        />
       ) : (
         fallback
       )}
@@ -113,5 +128,24 @@ export function EntryActions({ children }) {
     <div className="absolute right-0 top-0 z-10 flex gap-0.5 rounded-full bg-card p-0.5 shadow-sm ring-1 ring-foreground/15 print:hidden">
       {children}
     </div>
+  );
+}
+
+// Shown above the entries while a section is being edited: whether the order
+// follows the dates, or has been set by hand with the arrows.
+export function OrderNote({ manual, onSortByDate }) {
+  return (
+    <p className="pb-1 pt-2 text-sm text-muted-foreground print:hidden">
+      {manual ? (
+        <>
+          Custom order.{" "}
+          <button type="button" onClick={onSortByDate} className="font-semibold text-link hover:underline">
+            Sort by date
+          </button>
+        </>
+      ) : (
+        "Sorted by date. Use the arrows to set your own order."
+      )}
+    </p>
   );
 }

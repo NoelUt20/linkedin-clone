@@ -14,6 +14,8 @@ export const emptyProfile = {
   about: "",
   experience: [],
   education: [],
+  // Set when the user reorders a section by hand; otherwise it follows the dates.
+  manualOrder: { experience: false, education: false },
   certifications: [],
   skills: [],
 };

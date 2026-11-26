@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, GraduationCap, Pencil, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -25,12 +25,15 @@ import {
 import {
   EntryActions,
   EntryLogo,
+  OrderNote,
   SectionCard,
   SkillsField,
   SkillsLine,
 } from "@/components/profile/section-card";
 import { schools } from "@/data/schools";
-import { generateMonogramDataUrl } from "@/lib/generate-monogram";
+import { formatMonthValue, toMonthInput } from "@/lib/dates";
+import { displayLogo, isAutoLogo, logoUrl, resolveLogo } from "@/lib/logo";
+import { educationRange, insertSorted, orderEntries, sortByDate } from "@/lib/sort-entries";
 
 const emptyDraft = {
   school: "",
@@ -46,12 +49,19 @@ const emptyDraft = {
 
 const fallbackIcon = <GraduationCap className="size-6 text-muted-foreground" />;
 
-export function EducationCard({ education, onChange }) {
+// `manualOrder` is true once the user has used the arrows; until then the list
+// always follows the dates. `onChange(list, manual)` reports both.
+export function EducationCard({ education, manualOrder = false, onChange }) {
   const [editingId, setEditingId] = useState(null); // null closed, "new", or item id
   const [draft, setDraft] = useState(emptyDraft);
   const [deleteId, setDeleteId] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const missingDocumentName = draft.document !== null && !draft.document.title.trim();
+  const ordered = useMemo(
+    () => orderEntries(education, educationRange, manualOrder),
+    [education, manualOrder]
+  );
+  const endBeforeStart = draft.startYear && draft.endYear && draft.endYear < draft.startYear;
 
   const openAdd = () => {
     setDraft(emptyDraft);
@@ -59,37 +69,48 @@ export function EducationCard({ education, onChange }) {
   };
 
   const openEdit = (item) => {
-    setDraft({ ...emptyDraft, ...item });
+    // Older entries hold free-text dates; convert them so the pickers open filled in.
+    setDraft({
+      ...emptyDraft,
+      ...item,
+      startYear: toMonthInput(item.startYear),
+      endYear: toMonthInput(item.endYear),
+    });
     setEditingId(item.id);
   };
 
   const close = () => setEditingId(null);
 
+  // Sorted by date unless the user has set their own order, which is left alone.
+  const commit = (list) =>
+    onChange(manualOrder ? list : sortByDate(list, educationRange), manualOrder);
+
   const handleSave = () => {
-    if (!draft.school.trim() || missingDocumentName) return;
-    const saved = { ...draft, document: cleanDocument(draft.document) };
+    if (!draft.school.trim() || missingDocumentName || endBeforeStart) return;
+    const saved = {
+      ...draft,
+      logo: resolveLogo(schools, draft.school, draft.logo),
+      document: cleanDocument(draft.document),
+    };
     if (editingId === "new") {
-      onChange([...education, { ...saved, id: `edu-${Date.now()}` }]);
+      const item = { ...saved, id: `edu-${Date.now()}` };
+      commit(manualOrder ? insertSorted(ordered, item, educationRange) : [...ordered, item]);
     } else {
-      onChange(
-        education.map((item) =>
-          item.id === editingId ? { ...saved, id: editingId } : item
-        )
-      );
+      commit(ordered.map((item) => (item.id === editingId ? { ...saved, id: editingId } : item)));
     }
     close();
   };
 
   const confirmDelete = () => {
-    onChange(education.filter((item) => item.id !== deleteId));
+    commit(ordered.filter((item) => item.id !== deleteId));
   };
 
   const moveItem = (index, direction) => {
     const newIndex = index + direction;
-    if (newIndex < 0 || newIndex >= education.length) return;
-    const next = [...education];
+    if (newIndex < 0 || newIndex >= ordered.length) return;
+    const next = [...ordered];
     [next[index], next[newIndex]] = [next[newIndex], next[index]];
-    onChange(next);
+    onChange(next, true);
   };
 
   return (
@@ -105,10 +126,19 @@ export function EducationCard({ education, onChange }) {
       {education.length === 0 && (
         <p className="py-4 text-sm text-muted-foreground">No education added yet.</p>
       )}
+      {editMode && education.length > 1 && (
+        <OrderNote
+          manual={manualOrder}
+          onSortByDate={() => onChange(sortByDate(ordered, educationRange), false)}
+        />
+      )}
       <div className="flex flex-col divide-y divide-border">
-        {education.map((item, index) => (
+        {ordered.map((item, index) => (
           <div key={item.id} className="relative flex break-inside-avoid gap-3 py-4">
-            <EntryLogo logo={item.logo} fallback={fallbackIcon} />
+            <EntryLogo
+              logo={displayLogo(schools, item.school, item.logo)}
+              fallback={fallbackIcon}
+            />
             <div className="min-w-0 flex-1">
               <p className="text-base font-semibold leading-snug text-foreground">{item.school}</p>
               {(item.degree || item.fieldOfStudy) && (
@@ -118,7 +148,7 @@ export function EducationCard({ education, onChange }) {
               )}
               {(item.startYear || item.endYear) && (
                 <p className="text-base leading-snug text-muted-foreground">
-                  {[item.startYear, item.endYear].filter(Boolean).join("–")}
+                  {[item.startYear, item.endYear].map(formatMonthValue).filter(Boolean).join("–")}
                 </p>
               )}
               {item.description && (
@@ -144,7 +174,7 @@ export function EducationCard({ education, onChange }) {
                   variant="ghost"
                   size="icon"
                   onClick={() => moveItem(index, 1)}
-                  disabled={index === education.length - 1}
+                  disabled={index === ordered.length - 1}
                   aria-label="Move education down"
                 >
                   <ArrowDown className="size-4" />
@@ -192,9 +222,9 @@ export function EducationCard({ education, onChange }) {
                 id="edu-school"
                 value={draft.school}
                 onChange={(school) => setDraft((d) => ({ ...d, school }))}
-                onSelect={(school) =>
+                onSelect={(option) =>
                   setDraft((d) =>
-                    d.logo ? d : { ...d, logo: generateMonogramDataUrl(school) }
+                    isAutoLogo(d.logo) ? { ...d, logo: logoUrl(option.domain) } : d
                   )
                 }
                 options={schools}
@@ -224,21 +254,28 @@ export function EducationCard({ education, onChange }) {
                 <Label htmlFor="edu-start">Start date</Label>
                 <Input
                   id="edu-start"
+                  type="month"
                   value={draft.startYear}
                   onChange={(e) => setDraft({ ...draft, startYear: e.target.value })}
-                  placeholder="Aug 2026"
                 />
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="edu-end">End date</Label>
                 <Input
                   id="edu-end"
+                  type="month"
                   value={draft.endYear}
+                  min={draft.startYear || undefined}
+                  aria-invalid={endBeforeStart ? true : undefined}
                   onChange={(e) => setDraft({ ...draft, endYear: e.target.value })}
-                  placeholder="Jan 2031"
                 />
               </div>
             </div>
+            {endBeforeStart && (
+              <p className="-mt-2 text-sm text-destructive">
+                End date can&apos;t be before the start date.
+              </p>
+            )}
             <div className="grid gap-1.5">
               <Label htmlFor="edu-desc">Description</Label>
               <Textarea
@@ -264,7 +301,10 @@ export function EducationCard({ education, onChange }) {
             <Button variant="outline" onClick={close}>
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={!draft.school.trim() || missingDocumentName}>
+            <Button
+              onClick={handleSave}
+              disabled={!draft.school.trim() || missingDocumentName || endBeforeStart}
+            >
               Save
             </Button>
           </DialogFooter>

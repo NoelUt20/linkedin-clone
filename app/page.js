@@ -14,7 +14,10 @@ import { ProfileTabBar } from "@/components/profile/profile-tab-bar";
 import { SkillsCard } from "@/components/profile/skills-card";
 import { ThemeToggle } from "@/components/profile/theme-toggle";
 import { Button } from "@/components/ui/button";
+import { companies } from "@/data/companies";
 import { emptyProfile } from "@/data/empty-profile";
+import { schools } from "@/data/schools";
+import { displayLogo } from "@/lib/logo";
 import { useProfilesStorage } from "@/lib/use-profiles-storage";
 
 export default function ProfilePage() {
@@ -45,14 +48,14 @@ export default function ProfilePage() {
     ...profile.experience.map((item) => ({
       id: item.id,
       name: `${item.title} at ${item.company}`,
-      logo: item.logo,
+      logo: displayLogo(companies, item.company, item.logo),
       icon: <Briefcase className="text-muted-foreground" />,
       skills: item.skills,
     })),
     ...profile.education.map((item) => ({
       id: item.id,
       name: item.school,
-      logo: item.logo,
+      logo: displayLogo(schools, item.school, item.logo),
       icon: <GraduationCap className="text-muted-foreground" />,
       skills: item.skills,
     })),
@@ -120,11 +123,25 @@ export default function ProfilePage() {
           />
           <ExperienceCard
             experience={profile.experience}
-            onChange={(experience) => updateActiveData((d) => ({ ...d, experience }))}
+            manualOrder={profile.manualOrder?.experience ?? false}
+            onChange={(experience, manual) =>
+              updateActiveData((d) => ({
+                ...d,
+                experience,
+                manualOrder: { ...d.manualOrder, experience: manual },
+              }))
+            }
           />
           <EducationCard
             education={profile.education}
-            onChange={(education) => updateActiveData((d) => ({ ...d, education }))}
+            manualOrder={profile.manualOrder?.education ?? false}
+            onChange={(education, manual) =>
+              updateActiveData((d) => ({
+                ...d,
+                education,
+                manualOrder: { ...d.manualOrder, education: manual },
+              }))
+            }
           />
           <CertificationsCard
             certifications={certifications}
